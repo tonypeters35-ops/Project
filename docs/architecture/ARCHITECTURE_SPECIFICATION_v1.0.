@@ -1,0 +1,218 @@
+[STATE]
+phase: PHASE_0
+step_id: P0.S3
+progress: 1/7
+timestamp: 2025-01-27T16:00:00Z
+assumptions:
+- Workshop-gebaseerd gebruik: 4x per jaar, 10-30 processen per sessie
+- Interne tool Provincie Limburg, geen externe distributie behalve ZIP-export
+- Moderne browsers only, offline-capable na eerste load
+- Nederlands als voertaal, geen PII opslag
+- localStorage voldoende voor ~150 processen per cluster
+- PETRA V4 artifact blijft beschikbaar als referentie
+- Dark-mode expliciet buiten scope
+- Stack vastgesteld: React + TypeScript + Vite
+open_questions:
+- (alle vragen beantwoord door stakeholder)
+risks:
+- localStorage kan vol raken bij intensief gebruik meerdere clusters
+- Offline functionaliteit kan complex worden met cache management
+- Export-formaat compatibiliteit met Power BI nog te valideren
+- Performance degradatie bij >150 processen zonder virtualisatie
+artifacts:
+- naam: REQUIREMENTS_SPECIFICATION_MVP_v1.0
+  versie: v1.0
+  path/ref: Definitief requirements document hieronder
+next_actions:
+- QG0 validatie doorlopen
+- Bij GO: starten PHASE 1 Architectuur & Ontwerp
+- Interface contracten en architectuurnotitie opstellen
+
+# REQUIREMENTS SPECIFICATION - P4 MVP v1.0
+
+## 1. PROJECTCONTEXT
+
+**Projectnaam**: P4 – Process Prioritizer & Progress (MVP v1.0)  
+**Opdrachtgever**: Provincie Limburg  
+**Doel**: Vereenvoudigde web-applicatie voor proces-prioritering tijdens Lean workshops
+
+**Eindgebruikers**:
+- **Primair**: Proces-analisten / Lean-specialisten (workshop facilitators)
+- **Secundair**: Clustercoördinatoren / teamleiders (prioriteringsbeslissers)
+
+**Gebruiksscenario**: 
+- Workshop-sessies: 4x per jaar per cluster
+- 10-30 processen beoordelen per sessie  
+- Offline werken in vergaderzalen
+- Resultaten exporteren voor vervolganalyse
+
+## 2. FUNCTIONELE EISEN
+
+### 2.1 Must-Have Functies (MVP v1.0)
+
+**F01 - Assessment Module (Kern)**
+- Proces-metadata invoer: naam, eigenaar, cluster-toewijzing, frequentie
+- Scoring op 4 dimensies met 1-5 schaal:
+  - **Impact**: tijdsinvestering, aantal betrokkenen, financiële impact, frustratiefactor
+  - **Haalbaarheid**: proces-complexiteit, systeem-afhankelijkheid, beschikbare resources, draagvlak
+  - **Urgentie**: huidige knelpunten, organisatie-prioriteiten, seizoensrelevantie, quick-win potentieel
+  - **Complexiteit**: aantal afdelingen, stakeholders, IT-systemen, politieke gevoeligheid
+- Cluster-selectie uit 21 voorgedefinieerde Limburg-clusters (met emoji-iconen)
+- DOWNTIME waste-type classificatie (8 categorieën)
+- Gewichten-aanpassing via sliders: Impact/Haalbaarheid/Urgentie (totaal 100%)
+- Automatische `totalPriority` berekening
+- Validatie: verplichte velden + range-checks
+
+**F02 - Prioritering Module (Kern)**
+- Impact/Effort matrix visualisatie (4 kwadranten: Quick-wins, Beleidsprioriteit, Groot Project, Opvulling)
+- Real-time herberekening bij gewichten-wijziging
+- Proces-lijst gesorteerd op `totalPriority` (hoog naar laag)
+- Visuele indicatoren voor prioriteitscategorieën
+
+**F03 - Vergelijking Module (Light)**
+- Tabel-weergave alle ingevoerde processen
+- Sorteerbaar op alle kolommen (naam, cluster, scores, prioriteit)
+- Basis-filtering: alleen hoge prioriteit (≥ threshold)
+- Edit/Delete functionaliteit per proces
+- Bulk-export selectie
+
+**F04 - Progress Module (Light)**
+- Status-dropdown per proces: Nieuw/Ingepland/Bezig/Afgerond/On-hold
+- "Reality Fit %" veld (0-100%) voor actualiteit-check
+- Simpele voortgangsindicator op hoofdscherm
+- Handmatige status-updates (geen automatisering)
+
+**F05 - Data Persistentie & Export**
+- localStorage voor offline-gebruik
+- Auto-save bij elke invoer/wijziging (debounced)
+- JSON export (1-klik download) met timestamp
+- JSON import (eigen exports + meegeleverde template)
+- Data-validatie bij import met foutmeldingen
+
+### 2.2 Nice-to-Have (v2.0+ scope)
+- Dashboard met statistieken/grafieken
+- Trend-analyse en burn-up charts  
+- CSV export functionaliteit
+- PETRA-lagen detaillering (Sturend/Primair/Ondersteunend)
+- Geavanceerde filtering/zoekfuncties
+- Multi-user synchronisatie
+- Dark-mode toggle
+
+## 3. NIET-FUNCTIONELE EISEN
+
+### 3.1 Performance Eisen
+- **Laadtijd**: Initiële app load < 2 seconden
+- **Responsiviteit**: Alle interacties < 1 seconde response bij 150 processen
+- **Schaalbaarheid**: Ondersteuning tot 150 processen per gebruiker zonder performance-degradatie
+- **Memory**: Binnen localStorage limieten (5-10MB typisch)
+
+### 3.2 Usability Eisen  
+- **Efficiency**: 20 processen volledig assessment binnen 45 minuten
+- **Leercurve**: Geen training nodig voor ervaren workshop-facilitators
+- **Accessibility**: Minimaal WCAG 2.1 AA compliance
+- **Mobile**: Tablet-vriendelijk (10+ inch schermen)
+- **Offline**: Volledig functioneel zonder internetverbinding na eerste load
+
+### 3.3 Reliability Eisen
+- **Data-integriteit**: Geen dataverlies bij browser refresh/crash
+- **Foutafhandeling**: Graceful degradation bij localStorage vol/corrupt
+- **Recovery**: Auto-herstel van laatste geldige state
+- **Backup**: Export-functie als manual backup mechanisme
+
+### 3.4 Security & Privacy Eisen
+- **Data-minimalisatie**: Geen PII-opslag (alleen proces-namen + numerieke scores)
+- **Client-side only**: Geen server-communicatie, geen analytics tracking
+- **Export-veiligheid**: JSON-exports bevatten geen gevoelige systeeminformatie
+- **Browser-isolatie**: Data blijft binnen browser-context van gebruiker
+
+### 3.5 Compatibility Eisen
+- **Browsers**: Chrome 90+, Edge 90+, Firefox 88+, Safari 14+ (geen IE support)
+- **Platform**: Windows 10+, macOS 10.15+, moderne Linux distributions
+- **Resolution**: Ondersteunt 1024x768 tot 4K displays
+- **Interoperabiliteit**: JSON-export direct compatible met Power BI import
+
+## 4. TECHNISCHE CONSTRAINTS
+
+- **Architecture**: 100% client-side applicatie, geen backend/database
+- **Stack**: React 18+ + TypeScript 4.9+ + Vite 4+ (vast voorgeschreven)
+- **Storage**: localStorage als enige persistentie-laag
+- **Offline-first**: Moet werken zonder internet na initiële load
+- **Taal**: Nederlandse UI (labels, validaties, help-teksten, error messages)
+- **Theme**: Light-mode only (dark-mode expliciet uitgesloten)
+- **Responsive**: Desktop-first met tablet support (geen phone optimization)
+
+## 5. SUCCESS CRITERIA
+
+### 5.1 Meetbare Doelen
+1. **Workshop Efficiency**: Facilitator kan 20 processen invoeren, scoren en prioriteren binnen 45 minuten zonder handleiding
+2. **User Satisfaction**: Workshop-teams beoordelen prioritering als "logisch" (gemiddelde score ≥ 4/5)
+3. **Technical Reliability**: Geen dataverlies-incidenten gerapporteerd in eerste 3 maanden
+4. **Data Interoperability**: JSON-exports direct inlaadbaar in Power BI zonder handmatige aanpassingen
+5. **Adoption Rate**: Minimaal 2 clusters actief gebruik binnen 3 maanden na release
+
+### 5.2 Kwaliteitscriteria
+- **Code Coverage**: Minimaal 80% unit test coverage op business logic
+- **Performance Budget**: Lighthouse Performance Score ≥ 90
+- **Accessibility**: WCAG 2.1 AA compliance verified
+- **Browser Support**: Functioneel getest op alle target browsers
+
+## 6. RISICO-ANALYSE & MITIGATIES
+
+| Risico | Impact | Kans | Mitigatie |
+|--------|--------|------|-----------|
+| localStorage vol/corrupt | Hoog | Laag | Warning-systeem + data cleanup tools + export-reminder |
+| Offline sync-problemen | Medium | Medium | Conservative cache strategie + conflict-detectie |
+| Export incompatibiliteit Power BI | Hoog | Laag | Early validatie met test-dataset + stakeholder verificatie |
+| Performance degradatie >150 processen | Medium | Medium | Virtual scrolling + pagination + performance monitoring |
+| Browser compatibility issues | Medium | Laag | Automated cross-browser testing + progressive enhancement |
+| Workshop-flow bottlenecks | Hoog | Medium | User testing met echte facilitators + iteratieve UX verbetering |
+
+## 7. AANNAMES & DEPENDENCIES
+
+### 7.1 Expliciete Aannames
+- PETRA V4 scoring-algoritmes en gewichten blijven conceptueel geldig voor MVP
+- Workshop-facilitators hebben basis-digitale vaardigheden (drag/drop, formulieren invullen)
+- 21 Limburg-clusters lijst blijft stabiel gedurende MVP levenscyclus
+- Proces-prioritering gebeurt in groepscontext (geen individuele decision-support tool)
+- Workshop-deelnemers accepteren simplified UI vs. volledige PETRA V4 feature-set
+- JSON format voldoet aan Power BI import-requirements (te valideren in PHASE 1)
+- localStorage 5-10MB limiet is acceptabel voor 150 processen + metadata
+
+### 7.2 Externe Dependencies  
+- React + TypeScript + Vite toolchain beschikbaar en stabiel
+- Moderne browser-adoptie binnen Provincie Limburg (>90% target browsers)
+- PETRA V4 artifact toegankelijk voor algoritme-referentie tijdens ontwikkeling
+- Stakeholder beschikbaar voor user acceptance testing workshops
+
+### 7.3 Resterende Open Vragen
+- (alle kritieke vragen beantwoord door stakeholder input)
+
+---
+
+[DIFF]
+- Nieuw: Volledig requirements document opgesteld
+- Toegevoegd: Specifieke functionele eisen F01-F05 met acceptatiecriteria  
+- Toegevoegd: Niet-functionele eisen per categorie met meetbare targets
+- Toegevoegd: Risico-analyse met impact/kans/mitigatie matrix
+- Toegevoegd: Expliciete aannames en dependencies lijst
+- Gevalideerd: Alle stakeholder input verwerkt in requirements
+
+[TEST STATUS]
+summary: 0/0 tests (requirements fase - geen code)
+failing_tests: N/A
+fix_plan: Tests komen in PHASE 3 (skelet) en PHASE 4 (implementatie)
+
+[QUALITY GATE REVIEW - QG0]
+
+**QG0 Checklist:**
+- [x] **Doel en scope helder**: MVP doel, eindgebruikers, gebruikscontext expliciet gedefinieerd
+- [x] **Kritieke eisen (functioneel & niet-functioneel) expliciet**: 5 core modules + performance/usability/reliability eisen met meetbare criteria
+- [x] **Aannames en risico's gelogd**: 7 expliciete aannames + 6 geïdentificeerde risico's met mitigaties
+- [x] **Open vragen gemarkeerd met eigenaarschap**: Alle vragen beantwoord door stakeholder, geen openstaande items
+
+**Aanvullende validatie:**
+- [x] Success criteria zijn SMART (Specific, Measurable, Achievable, Relevant, Time-bound)
+- [x] Technische constraints helder afgebakend (React+TS+Vite, localStorage, offline-first)
+- [x] Scope duidelijk afgebakend (MVP vs v2.0+ features)
+- [x] Stakeholder input volledig verwerkt
+
