@@ -1,0 +1,1 @@
+// TODO: Definieer settings interface(s)
